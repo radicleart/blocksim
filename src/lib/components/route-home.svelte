@@ -33,7 +33,7 @@ let blockDimensions = { width: 80, height: 80 };
     const data = e.detail;
     switch(data.opcode) {
       case 'downloadCanvas':
-          downloadCanvas(data);
+          downloadCanvas(data.canv);
           break;
       case 'activateMenu':
           targetBlock = data.block;
@@ -41,6 +41,7 @@ let blockDimensions = { width: 80, height: 80 };
           break;
       case 'addBlock':
           errorMessage = undefined;
+          targetBlock = data.block;
           pushEvent(data.block.id, data.block.parentId, BlockState.READY, BlockState.READY);
           dimensions = data.dimensions;
           componentKey3++;

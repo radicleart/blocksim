@@ -9,6 +9,16 @@
 	  import { BlockState, type BlockType } from "$lib/models/Block";
 
     const dispatch = createEventDispatcher();
+    const pallette = {
+      background: '#E0E0E0',
+      familyFill: '#c64ae8',
+      readyFill: '#7d6bd6',
+      readyStroke: '#98d9ed',
+      frozenFill: '#98d9ed',
+      frozenStroke: '#98d9ed',
+      concealedFill: '#fff',
+      concealedStroke: '#fff',
+    }
     
     export let blockMode:string;
     export let blockDimensions:DimensionsType = { width: 100, height: 100 };
@@ -30,14 +40,20 @@
     const render = function (block:BlockType|null) {
       const blocks = getBlocks();
       canv.clear();
+      canv.backgroundColor = pallette.background;
       calculateBlockCoords(blockMode, dimensions, blockDimensions);
       // todo addMenu(canv); - possible in canvas but tricky discuss with Igor.
       blocks.forEach((b) => {
         const coords = b.coords;
-        let fill = (block && isFamily(block, b.id)) ? '#CE2BFB' : '#BFBCE2';
-        if (b.state === BlockState.FROZEN) fill = '#663366';
-        else if (b.state === BlockState.CONCEALED) fill = '#fff';
-        const group = addRect(canv, b.id, coords, blockDimensions, fill);
+        
+        let fill = pallette.readyFill;
+        let stroke = pallette.readyStroke;
+        if (b.state === BlockState.FROZEN) {
+          fill = pallette.frozenFill;
+          stroke = pallette.frozenStroke;
+        } else if (b.state === BlockState.CONCEALED) fill = pallette.concealedFill;
+        if (block && isFamily(block, b.id)) fill = pallette.familyFill;
+        const group = addRect(canv, b.id, coords, blockDimensions, fill, stroke);
         const menuGroup = addMenu(canv, group, b.id);
         menuGroup.on({'mouseup' : activateMenu});
         group.on({'mouseup' : addBlock});
@@ -98,10 +114,11 @@
       render(null);
       doUpdateCanvas('handleGenesis');
       dispatch("doUpdateCanvas", { blockMode, opcode: 'addBlock', canv, dimensions, block });
-  };
+    };
 
     const mountCanvas = async function () {
       canv = new fabric.Canvas(canvas, {
+        backgroundColor: 'cyan',
         preserveObjectStacking: true
       });
       canv.setDimensions({width: dimensions.width, height: dimensions.height})
@@ -130,7 +147,7 @@
 
 <style>
   canvas {
-    border: 1pt solid #ccc;
+    border: 1pt solid #bf6bd6;
     border-radius: 15px;
   }
   .block-mode {

@@ -73,8 +73,8 @@ function getCircle(coords: { x:number, y:number }, config:any) {
 		width: config.width, 
 		height: config.height, 
 		fill: config.fill, 
-		strokeWidth: 0, 
-		stroke: config.stroke,
+		strokeWidth: 1, 
+		stroke: '#fff',
 		radius: config.radius, 
 	  });
   }
@@ -83,7 +83,7 @@ function getCircle(coords: { x:number, y:number }, config:any) {
 	return {
 		left: coords.x - 5,
 		top: coords.y - 10,
-		strokeWidth: 0,
+		strokeWidth: 1,
 		stroke:"#fff",
 		paintFirst: "stroke",
 		fontFamily: 'Gilroy-Light',
@@ -92,15 +92,15 @@ function getCircle(coords: { x:number, y:number }, config:any) {
 	};
   }
 
-  export function  addRect(canv:any, id:number, coords: { x:number, y:number }, blockDimensions:DimensionsType, fill:string) {
+  export function  addRect(canv:any, id:number, coords: { x:number, y:number }, blockDimensions:DimensionsType, fill:string, stroke:string) {
 	const rect = new fabric.Rect({
 		left: coords.x + 5,
 		top: coords.y,
 		width: blockDimensions.width,
 		height: blockDimensions.height,
-		fill: fill,
+		fill,
 		strokeWidth: 2,
-		stroke: "#880E4F",
+		stroke,
 	  });
 	  //canv.add(rect);
 	  const text = new fabric.Text('' + id, getTextProps(rect.getCenterPoint(), null, 18));
@@ -118,14 +118,14 @@ function getCircle(coords: { x:number, y:number }, config:any) {
 
   export function addMenu(canv:any, parent:any, id:number) {
 	const coords = {
-		x: parent.getCenterPoint().x - parent.width / 2 + 4,
-		y: parent.getCenterPoint().y - parent.height / 2 + 4,
+		x: parent.getCenterPoint().x - parent.width / 2 + 3,
+		y: parent.getCenterPoint().y - parent.height / 2 + 3,
 	}
 	const config = { radius: 3, width: 30, height: 20, fill: '#3e3e3e', stroke: '#3e3e3e', drawer: { height: 30, width: 146, fill: '#C5edee', stroke: '#C5edee' } };
 	
 	const c1 = getCircle({ x: coords.x, y: coords.y }, config);
-	const c2 = getCircle({ x: coords.x, y: coords.y + 8 }, config);
-	const c3 = getCircle({ x: coords.x, y: coords.y + 16 }, config);
+	const c2 = getCircle({ x: coords.x, y: coords.y + 6 }, config);
+	const c3 = getCircle({ x: coords.x, y: coords.y + 12 }, config);
 	const group = new fabric.Group([c1, c2, c3], { lockMovementX: true, lockMovementY: true, selectable: false });
 	group.hoverCursor = 'crosshairs';
 	canv.add(group);
