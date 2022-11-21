@@ -1,11 +1,12 @@
 <script lang="ts">
-    import { onMount, onDestroy, tick } from "svelte";
+    import { onMount, onDestroy } from "svelte";
     import { fabric } from "fabric";
     import { Download } from "svelte-bootstrap-icons";
     import { createEventDispatcher } from "svelte";
-    import { createBlock, getBlocks, calculateBlockCoords } from '$lib/blocks'
-    import { makeLines, getTextProps, addRect } from '$lib/drawing'
+    import { isFamily, createBlock, getBlocks, calculateBlockCoords } from '$lib/blocks'
+    import { makeLines, addRect, scaleCanvas, addMenu } from '$lib/drawing'
 	  import type { DimensionsType } from "../../blocks";
+	  import { BlockState, type BlockType } from "$lib/models/Block";
 
     const dispatch = createEventDispatcher();
     
@@ -16,35 +17,38 @@
       height: (window.innerHeight - 200)
     };
     let canvas: HTMLCanvasElement;
-    let canv;
-    let text; 
+    let canv: any;
 
     onDestroy(() => {
       if (canv) canv.dispose();
     })
 
-    const download = () => {
-      dispatch("update", { opcode: 'download', canv });
+    const doUpdateCanvas = (opcode:string) => {
+      dispatch("doUpdateCanvas", { blockMode, opcode, canv });
     }
 
-    const saveBlockState = () => {
-      dispatch("update", { opcode: 'saveBlockState', canv });
-    }
-
-    const render = function () {
-      calculateBlockCoords(blockMode, dimensions, blockDimensions);
+    const render = function (block:BlockType|null) {
       const blocks = getBlocks();
       canv.clear();
+      calculateBlockCoords(blockMode, dimensions, blockDimensions);
+      // todo addMenu(canv); - possible in canvas but tricky discuss with Igor.
       blocks.forEach((b) => {
         const coords = b.coords;
-        const group = addRect(canv, b.id, coords, blockDimensions);
+        let fill = (block && isFamily(block, b.id)) ? '#CE2BFB' : '#BFBCE2';
+        if (b.state === BlockState.FROZEN) fill = '#663366';
+        else if (b.state === BlockState.CONCEALED) fill = '#fff';
+        const group = addRect(canv, b.id, coords, blockDimensions, fill);
+        const menuGroup = addMenu(canv, group, b.id);
+        menuGroup.on({'mouseup' : activateMenu});
         group.on({'mouseup' : addBlock});
-      })
+        group.on({'mouseover' : highlightTree});
+        group.on({'mouseout' : unhighlightTree});
+      });
       renderLines(blockDimensions);
       canv.renderAll();
     };
 
-    const renderLines = function (blockDimensions) {
+    const renderLines = function (blockDimensions:DimensionsType) {
       const blocks = getBlocks();
       blocks.forEach((b) => {
         if (b.parentId > 0) {
@@ -58,20 +62,43 @@
       })
     };
 
-    const addBlock = function (evt) {
-      const block = evt.target.toObject();
-      createBlock(block.id);
-      canv.clear();
-      render();
-      saveBlockState();
+    const unhighlightTree = function (evt: any) {
+      render(null);
+      doUpdateCanvas('unhighlightTree');
     };
 
-    const handleGenesis = function (evt) {
-      canv.clear();
-      createBlock(0);
-      render();
-      saveBlockState();
+    const highlightTree = function (evt: any) {
+      const id = evt.target.toObject().id;
+      const block = getBlocks().find((o) => o.id === id);
+      render(block);
+      doUpdateCanvas('highlightTree');
     };
+
+    const activateMenu = function (evt: any) {
+      const id = evt.target.toObject().id;
+      const block = getBlocks().find((o) => o.id === id);
+      // render(block);
+      dispatch("doUpdateCanvas", { blockMode, opcode: 'activateMenu', block });
+    };
+
+    const addBlock = function (evt: any) {
+      try {
+        const block = createBlock(evt.target.toObject().id);
+        const dims = scaleCanvas(document, canv, dimensions, getBlocks().length)
+        render(null);
+        dispatch("doUpdateCanvas", { blockMode, opcode: 'addBlock', canv, dimensions: dims, block });
+      } catch (e) {
+        dispatch("doUpdateCanvas", { blockMode, opcode: 'stateChangeError', e });
+        console.log(e);
+      }
+    };
+
+    const handleGenesis = function () {
+      const block = createBlock(0);
+      render(null);
+      doUpdateCanvas('handleGenesis');
+      dispatch("doUpdateCanvas", { blockMode, opcode: 'addBlock', canv, dimensions, block });
+  };
 
     const mountCanvas = async function () {
       canv = new fabric.Canvas(canvas, {
@@ -80,13 +107,9 @@
       canv.setDimensions({width: dimensions.width, height: dimensions.height})
       const blocks = getBlocks();
       if (blocks.length > 0) {
-        render()
+        render(null)
       } else {
-        text = new fabric.Text('Click here to load genesis block..', getTextProps({ x: 20, y: 20 }, '#000'));
-        if (blockMode === 'stacks') {
-          canv.add(text).renderAll();
-        }
-        text.on({'mouseup' : handleGenesis});
+        handleGenesis();
       }
     };
 
@@ -98,14 +121,17 @@
 <div class="d-flex justify-content-between py-1">
   <div><span class="block-mode">Mode: {blockMode}</span></div>
   <div class=" px-5">
-    <span class=""><a href="/" on:click|preventDefault={download}><Download width={20} height={20}/></a></span>
+    <span class=""><a href="/" on:click|preventDefault={() => doUpdateCanvas('downloadCanvas')}><Download width={20} height={20}/></a></span>
   </div>
 </div>
-<canvas bind:this={canvas} width="400" height="400" style={'width: 400px; height: 400px; border-radius: 25px;'}/>
+<div>
+  <canvas bind:this={canvas} width="400" height="400"/>
+</div>
 
 <style>
   canvas {
     border: 1pt solid #ccc;
+    border-radius: 15px;
   }
   .block-mode {
     text-transform: capitalize;

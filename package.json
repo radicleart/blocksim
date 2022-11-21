@@ -3,7 +3,10 @@
 	"version": "0.0.1",
 	"scripts": {
 		"dev": "vite dev",
-		"build": "svelte-kit sync && svelte-package",
+		"build": "vite build",
+		"build-prod": "vite build --mode production",
+		"build-stag": "vite build --mode staging",
+		"package": "svelte-kit package",
 		"prepublishOnly": "echo 'Did you mean to publish `./package/`, instead of `./`?' && exit 1",
 		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
@@ -31,6 +34,7 @@
 	"type": "module",
 	"dependencies": {
 		"@fontsource/fira-mono": "^4.5.10",
+		"@sveltejs/adapter-static": "^1.0.0-next.48",
 		"@types/bootstrap": "^5.2.6",
 		"autoprefixer": "^10.4.13",
 		"bootstrap": "^5.2.2",

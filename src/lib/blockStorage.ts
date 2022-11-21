@@ -1,11 +1,13 @@
 import type { BlockType } from './models/Block.ts'
+import type { EventType } from './models/Event.ts'
 
 const STORAGE_KEY = 'block-store';
 
-export function saveState(blocks:BlockType[]) {
-    const blockStore:[{ ts: number, blocks:BlockType[] }] = [
+export function saveState(blocks:BlockType[], events:EventType[]) {
+    const blockStore:[{ ts: number, blocks:BlockType[], events:EventType[] }] = [
 		{
 			blocks,
+			events,
 			ts: new Date().getTime()
 		}
 	];
