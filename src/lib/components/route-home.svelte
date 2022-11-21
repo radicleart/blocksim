@@ -93,8 +93,8 @@ const updateBlockSize = (value:number) => {
 }
 
 const expandCanvas = () => {
-  dimensions.width = dimensions.width * 2;
-  dimensions.height = dimensions.height * 2;
+  dimensions.width = dimensions.width * 1.5;
+  dimensions.height = dimensions.height * 2.5;
   componentKey++;
   componentKey2++;
   componentKey3++;
