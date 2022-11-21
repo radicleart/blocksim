@@ -4,7 +4,7 @@ import { popEvent, getEvents, pushEvent, clearEvents } from '../events';
 import { saveState } from '../blockStorage';
 import Canvas from './canvas/Canvas.svelte';
 import BlockMenu from './BlockMenu.svelte';
-import { CloudDownloadFill, ZoomIn, Grid3x2GapFill, ArrowRepeat, ArrowUpLeftCircleFill, FileBarGraphFill } from "svelte-bootstrap-icons";
+import { ArrowsFullscreen, CloudDownloadFill, ZoomIn, Grid3x2GapFill, ArrowRepeat, ArrowUpLeftCircleFill, FileBarGraphFill } from "svelte-bootstrap-icons";
 import { onDestroy } from 'svelte';
 import type { BlockType } from "$lib/models/Block";
 import { BlockState } from '$lib/models/Block'
@@ -29,42 +29,45 @@ let blockDimensions = { width: 80, height: 80 };
  * Event handler for canvas rendering
  * @param e
  */
- const handleUpdateCanvas = (e: { detail: any; }) => {
-    const data = e.detail;
-    switch(data.opcode) {
-      case 'downloadCanvas':
-          downloadCanvas(data.canv);
-          break;
-      case 'activateMenu':
-          targetBlock = data.block;
-          componentKey3++;
-          break;
-      case 'addBlock':
-          errorMessage = undefined;
-          targetBlock = data.block;
-          pushEvent(data.block.id, data.block.parentId, BlockState.READY, BlockState.READY);
-          dimensions = data.dimensions;
-          componentKey3++;
-          componentKey2++;
-          componentKey++;
-          break;
-      case 'freeze':
-        registerNewState(data.block, BlockState.FROZEN);
-        break;
-      case 'thaw':
-        registerNewState(data.block, BlockState.READY);
-        break;
-      case 'conceal':
-        registerNewState(data.block, BlockState.CONCEALED);
-        break;
-      case 'disclose':
-        registerNewState(data.block, BlockState.READY);
-        break;
-      case 'stateChangeError':
-          errorMessage = data.e
-      default:
-        saveState(getBlocks(), getEvents());
-    }
+const handleUpdateCanvas = (e: { detail: any; }) => {
+  const data = e.detail;
+  switch(data.opcode) {
+    case 'downloadCanvas':
+      downloadCanvas(data.canv);
+      break;
+    case 'expandCanvas':
+      expandCanvas();
+      break;
+    case 'activateMenu':
+      targetBlock = data.block;
+      componentKey3++;
+      break;
+    case 'addBlock':
+      errorMessage = undefined;
+      targetBlock = data.block;
+      pushEvent(data.block.id, data.block.parentId, BlockState.READY, BlockState.READY);
+      dimensions = data.dimensions;
+      componentKey3++;
+      componentKey2++;
+      componentKey++;
+      break;
+    case 'freeze':
+      registerNewState(data.block, BlockState.FROZEN);
+      break;
+    case 'thaw':
+      registerNewState(data.block, BlockState.READY);
+      break;
+    case 'conceal':
+      registerNewState(data.block, BlockState.CONCEALED);
+      break;
+    case 'disclose':
+      registerNewState(data.block, BlockState.READY);
+      break;
+    case 'stateChangeError':
+        errorMessage = data.e
+    default:
+      saveState(getBlocks(), getEvents());
+  }
 }
 
 const registerNewState = (block:BlockType, newState:BlockState) => {
@@ -82,20 +85,28 @@ const registerNewState = (block:BlockType, newState:BlockState) => {
 }
 
 const updateBlockSize = (value:number) => {
-    blockSize = value;
-    //const scaleRatio = Math.min(dimensions.width/blockSize, dimensions.height/blockSize);
-    blockDimensions = { width: (80 * blockSize) / 100, height: (80 * blockSize) / 100 };
-    //dimensions = { width: dimensions.width * scaleRatio, height: dimensions.height * scaleRatio };
-    componentKey++;
+  blockSize = value;
+  //const scaleRatio = Math.min(dimensions.width/blockSize, dimensions.height/blockSize);
+  blockDimensions = { width: (80 * blockSize) / 100, height: (80 * blockSize) / 100 };
+  //dimensions = { width: dimensions.width * scaleRatio, height: dimensions.height * scaleRatio };
+  componentKey++;
+}
+
+const expandCanvas = () => {
+  dimensions.width = dimensions.width * 2;
+  dimensions.height = dimensions.height * 2;
+  componentKey++;
+  componentKey2++;
+  componentKey3++;
 }
 
 const undoLastBlock = () => {
-    const event = popEvent();
-    undoBlock(event);
-    saveState(getBlocks(), getEvents());
-    componentKey++;
-    componentKey2++;
-    componentKey3++;
+  const event = popEvent();
+  undoBlock(event);
+  saveState(getBlocks(), getEvents());
+  componentKey++;
+  componentKey2++;
+  componentKey3++;
 }
 
 const updateDisplayMode = (value:string) => {
@@ -181,6 +192,9 @@ onDestroy(() => saveState(getBlocks(), getEvents()));
         </li>
         <li class="nav-item">
           <a title="Undo last operation" class="nav-link" href="/" on:click|preventDefault={undoLastBlock}><ArrowUpLeftCircleFill width={20} height={20}/></a>
+        </li>
+        <li class="nav-item">
+          <a title="Expand canvas" class="nav-link" href="/" on:click|preventDefault={expandCanvas}><ArrowsFullscreen width={20} height={20}/></a>
         </li>
         <li class="nav-item dropdown">
           <a title="Change layout" class="nav-link dropdown-toggle" href="/" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">

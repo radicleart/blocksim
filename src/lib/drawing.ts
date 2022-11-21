@@ -149,7 +149,8 @@ function addDrawer(config:any) {
 }
 
 export function scaleCanvas(document:any, canv:any, dimensions:DimensionsType, blocks:number) {
-	if (blocks % 10 !== 0) return dimensions;
+	// switch off auto scaling
+	if (blocks % 1000 !== 0) return dimensions;
 	const scaleFactor = Math.floor((blocks / 10)) + 1;
 	if (scaleFactor <= 1) return dimensions;
 	scalor.x += scaleFactor / 10;
