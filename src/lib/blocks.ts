@@ -83,7 +83,7 @@ function getLevel(parentId:number) {
 	let x = 0;
 	if (siblings === 0) {
 		x = parent.coords.x + gap;
-	} else if (siblings % 2 === 0) {
+	} else if (block.parentId % 2 === 0) {
 		x = parent.coords.x - ((width + gap) / 2) * siblings;
 	} else  {
 		x = parent.coords.x + ((width + gap) / 2) * siblings;
@@ -201,9 +201,11 @@ export function setBlocks(blocks:BlockType[]) {
 export function undoBlock(event:EventType) {
 	const index = blockList.findIndex((o) => o.id === event.blockId);
 	if (event.from === event.to) {
-		return blockList.splice(index, 1);
+		blockList.splice(index, 1);
+		return true;
 	} else {
-		return blockList[index].state = event.from;
+		blockList[index].state = event.from;
+		return false;
 	}
 }
 

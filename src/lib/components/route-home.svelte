@@ -8,6 +8,7 @@ import { ArrowsFullscreen, CloudDownloadFill, ZoomIn, Grid3x2GapFill, ArrowRepea
 import { onDestroy } from 'svelte';
 import type { BlockType } from "$lib/models/Block";
 import { BlockState } from '$lib/models/Block'
+import { blockStore } from '$lib/stores.js';
 
 let displayMode = 'both';
 let displays = 2;
@@ -43,15 +44,6 @@ const handleUpdateCanvas = (e: { detail: any; }) => {
       targetBlock = data.block;
       componentKey3++;
       break;
-    case 'unhighlightTree':
-      if (data.blockMode === 'stacks') componentKeyB++;
-      else if (data.blockMode === 'bitcoin') componentKeyA++;
-      break;
-    case 'highlightTree':
-      if (data.blockMode === 'stacks') componentKeyB++;
-      else if (data.blockMode === 'bitcoin') componentKeyA++;
-      componentKey3++;
-      break;
     case 'addBlock':
       errorMessage = undefined;
       targetBlock = data.block;
@@ -60,8 +52,8 @@ const handleUpdateCanvas = (e: { detail: any; }) => {
       //else if (data.blockMode === 'bitcoin') componentKeyA++;
       componentKey3++;
       componentKey2++;
-      componentKeyA++;
-      componentKeyB++;
+      //componentKeyA++;
+      //componentKeyB++;
       break;
     case 'freeze':
       registerNewState(data.block, BlockState.FROZEN);
@@ -88,10 +80,9 @@ const registerNewState = (block:BlockType, newState:BlockState) => {
     const startState = block.state;
     block.changeState(newState);
     pushEvent(block.id, block.parentId, startState, newState);
+    $blockStore = { opcode: 'newState', blockId: block.id };
     componentKey3++;
     componentKey2++;
-    componentKeyA++;
-    componentKeyB++;
   } catch(err:any) {
     errorMessage = err;
   }
@@ -119,8 +110,7 @@ const undoLastBlock = () => {
   const event = popEvent();
   undoBlock(event);
   saveState(getBlocks(), getEvents());
-  componentKeyA++;
-  componentKeyB++;
+  $blockStore = { opcode: 'undo', blockId: event.blockId };
   componentKey2++;
   componentKey3++;
 }

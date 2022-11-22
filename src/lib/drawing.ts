@@ -104,7 +104,7 @@ function getCircle(coords: { x:number, y:number }, config:any) {
 	  });
 	  //canv.add(rect);
 	  const text = new fabric.Text('' + id, getTextProps(rect.getCenterPoint(), null, 18));
-	  const group = new fabric.Group([rect, text], { lockMovementX: true, lockMovementY: true, selectable: false });
+	  const group = new fabric.Group([rect, text], { lockMovementX: false, lockMovementY: true, selectable: false });
 	  group.hoverCursor = 'pointer';
 	  canv.add(group);
 	  group.toObject = function() {
@@ -126,7 +126,7 @@ function getCircle(coords: { x:number, y:number }, config:any) {
 	const c1 = getCircle({ x: coords.x, y: coords.y }, config);
 	const c2 = getCircle({ x: coords.x, y: coords.y + 6 }, config);
 	const c3 = getCircle({ x: coords.x, y: coords.y + 12 }, config);
-	const group = new fabric.Group([c1, c2, c3], { lockMovementX: true, lockMovementY: true, selectable: false });
+	const group = new fabric.Group([c1, c2, c3], { lockMovementX: false, lockMovementY: true, selectable: false });
 	group.hoverCursor = 'crosshairs';
 	canv.add(group);
 	group.toObject = function() {
@@ -136,17 +136,6 @@ function getCircle(coords: { x:number, y:number }, config:any) {
 	};
 	return group;
   }
-
-function addDrawer(config:any) {
-	const rect1 = new fabric.Rect({ left: 2, top: 2, width: config.drawer.width, height: config.drawer.height, fill: config.drawer.fill, strokeWidth: 1, stroke: config.drawer.stroke });
-	const coords = {
-		x: rect1.getCenterPoint().x - 40,
-		y: rect1.getCenterPoint().y + 3,
-	}
-	const text1 = new fabric.Text('disclose node', getTextProps(coords, '#333', 12));
-	const group1 = new fabric.Group([rect1, text1], { lockMovementX: true, lockMovementY: true });
-	return group1;
-}
 
 export function scaleCanvas(document:any, canv:any, dimensions:DimensionsType, blocks:number) {
 	// switch off auto scaling
