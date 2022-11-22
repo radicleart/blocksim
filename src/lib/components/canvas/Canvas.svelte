@@ -1,15 +1,18 @@
 <script lang="ts">
-    import { onMount, onDestroy } from "svelte";
-    import { fabric } from "fabric";
-    import { Download } from "svelte-bootstrap-icons";
-    import { createEventDispatcher } from "svelte";
-    import { isFamily, createBlock, getBlocks, calculateBlockCoords } from '$lib/blocks'
-    import { makeLines, addRect, scaleCanvas, addMenu } from '$lib/drawing'
-	  import type { DimensionsType } from "../../blocks";
-	  import { BlockState, type BlockType } from "$lib/models/Block";
+  import { onMount, onDestroy } from "svelte";
+  import { fabric } from "fabric";
+  import { Download } from "svelte-bootstrap-icons";
+  import { createEventDispatcher } from "svelte";
+  import { isFamily, createBlock, getBlocks, calculateBlockCoords } from '$lib/blocks'
+  import { makeLines, addRect, scaleCanvas, addMenu } from '$lib/drawing'
+  import type { DimensionsType } from "../../blocks";
+  import type { BlockType } from "../../models/Block";
+  import { BlockState } from "$lib/models/Block";
+  import { blockStore } from '$lib/stores.js';
 
-    const dispatch = createEventDispatcher();
-    const pallette = {
+  const dispatch = createEventDispatcher();
+
+  const pallette = {
       background: '#E0E0E0',
       familyFill: '#c64ae8',
       readyFill: '#7d6bd6',
@@ -32,10 +35,6 @@
     onDestroy(() => {
       if (canv) canv.dispose();
     })
-
-    const doUpdateCanvas = (opcode:string) => {
-      dispatch("doUpdateCanvas", { blockMode, opcode, canv });
-    }
 
     const render = function (block:BlockType|null) {
       const blocks = getBlocks();
@@ -80,14 +79,16 @@
 
     const unhighlightTree = function (evt: any) {
       render(null);
-      doUpdateCanvas('unhighlightTree');
+      blockStore.update(async () => null);
+      dispatch("doUpdateCanvas", { blockMode, opcode: 'unhighlightTree', canv });
     };
 
     const highlightTree = function (evt: any) {
       const id = evt.target.toObject().id;
       const block = getBlocks().find((o) => o.id === id);
+      blockStore.update(b => block);
       render(block);
-      doUpdateCanvas('highlightTree');
+      dispatch("doUpdateCanvas", { blockMode, opcode: 'highlightTree', canv });
     };
 
     const activateMenu = function (evt: any) {
@@ -112,7 +113,7 @@
     const handleGenesis = function () {
       const block = createBlock(0);
       render(null);
-      doUpdateCanvas('handleGenesis');
+      // doUpdateCanvas('handleGenesis');
       dispatch("doUpdateCanvas", { blockMode, opcode: 'addBlock', canv, dimensions, block });
     };
 
@@ -132,13 +133,22 @@
 
     onMount(async () => {
       await mountCanvas();
+      blockStore.subscribe((block) => {
+        if (getBlocks().length > 1) {
+          if (block && block.id) {
+            render(block);
+          } else {
+            render(null)
+          }
+        }
+      });
     });
 </script>
 
 <div class="d-flex justify-content-between py-1">
   <div><span class="block-mode">Mode: {blockMode}</span></div>
   <div class=" px-5">
-    <span class=""><a href="/" on:click|preventDefault={() => doUpdateCanvas('downloadCanvas')}><Download width={20} height={20}/></a></span>
+    <span class=""><a href="/" on:click|preventDefault={() => dispatch("doUpdateCanvas", { blockMode, opcode: 'downloadCanvas', canv })}><Download width={20} height={20}/></a></span>
   </div>
 </div>
 <div>

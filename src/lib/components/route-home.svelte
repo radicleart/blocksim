@@ -11,7 +11,8 @@ import { BlockState } from '$lib/models/Block'
 
 let displayMode = 'both';
 let displays = 2;
-let componentKey = 0;
+let componentKeyA = 0;
+let componentKeyB = 0;
 let componentKey2 = 0;
 let componentKey3 = 0;
 let targetBlock:BlockType;
@@ -42,14 +43,25 @@ const handleUpdateCanvas = (e: { detail: any; }) => {
       targetBlock = data.block;
       componentKey3++;
       break;
+    case 'unhighlightTree':
+      if (data.blockMode === 'stacks') componentKeyB++;
+      else if (data.blockMode === 'bitcoin') componentKeyA++;
+      break;
+    case 'highlightTree':
+      if (data.blockMode === 'stacks') componentKeyB++;
+      else if (data.blockMode === 'bitcoin') componentKeyA++;
+      componentKey3++;
+      break;
     case 'addBlock':
       errorMessage = undefined;
       targetBlock = data.block;
       pushEvent(data.block.id, data.block.parentId, BlockState.READY, BlockState.READY);
-      dimensions = data.dimensions;
+      //if (data.blockMode === 'stacks') componentKeyB++;
+      //else if (data.blockMode === 'bitcoin') componentKeyA++;
       componentKey3++;
       componentKey2++;
-      componentKey++;
+      componentKeyA++;
+      componentKeyB++;
       break;
     case 'freeze':
       registerNewState(data.block, BlockState.FROZEN);
@@ -78,7 +90,8 @@ const registerNewState = (block:BlockType, newState:BlockState) => {
     pushEvent(block.id, block.parentId, startState, newState);
     componentKey3++;
     componentKey2++;
-    componentKey++;
+    componentKeyA++;
+    componentKeyB++;
   } catch(err:any) {
     errorMessage = err;
   }
@@ -89,13 +102,15 @@ const updateBlockSize = (value:number) => {
   //const scaleRatio = Math.min(dimensions.width/blockSize, dimensions.height/blockSize);
   blockDimensions = { width: (80 * blockSize) / 100, height: (80 * blockSize) / 100 };
   //dimensions = { width: dimensions.width * scaleRatio, height: dimensions.height * scaleRatio };
-  componentKey++;
+  componentKeyA++;
+  componentKeyB++;
 }
 
 const expandCanvas = () => {
   dimensions.width = dimensions.width * 1.5;
-  dimensions.height = dimensions.height * 2.5;
-  componentKey++;
+  dimensions.height = dimensions.height * 3;
+  componentKeyA++;
+  componentKeyB++;
   componentKey2++;
   componentKey3++;
 }
@@ -104,26 +119,28 @@ const undoLastBlock = () => {
   const event = popEvent();
   undoBlock(event);
   saveState(getBlocks(), getEvents());
-  componentKey++;
+  componentKeyA++;
+  componentKeyB++;
   componentKey2++;
   componentKey3++;
 }
 
 const updateDisplayMode = (value:string) => {
-    displayMode = value;
-    displays = 1;
-    if (displayMode !== 'both') {
-        displays = 2;
-        dimensions = {
-            width: (window.innerWidth - 60),
-            height: (window.innerHeight - 200)
-        }
-    } else {
-        dimensions.width = (window.innerWidth - 60) / 2;
-    }
-    componentKey++;
-    componentKey2++;
-    componentKey3++;
+  displayMode = value;
+  displays = 1;
+  if (displayMode !== 'both') {
+      displays = 2;
+      dimensions = {
+          width: (window.innerWidth - 60),
+          height: (window.innerHeight - 200)
+      }
+  } else {
+      dimensions.width = (window.innerWidth - 60) / 2;
+  }
+  componentKeyA++;
+  componentKeyB++;
+  componentKey2++;
+  componentKey3++;
 }
 
 const restart = () => {
@@ -134,26 +151,27 @@ const restart = () => {
   saveState(getBlocks(), getEvents());
   clearBlocks();
   clearEvents();
-  componentKey++;
+  componentKeyA++;
+  componentKeyB++;
   componentKey2++;
   componentKey3++;
 }
 
 const download = (filename:string, data:any) => {
-    // const canv = e.detail.canv;
-    const link = document.createElement('a');
-    link.download = filename;
-    link.href = data;
-    link.target = '_blank'
-    link.click();
-    //document.body.removeChild(link);
+  // const canv = e.detail.canv;
+  const link = document.createElement('a');
+  link.download = filename;
+  link.href = data;
+  link.target = '_blank'
+  link.click();
+  //document.body.removeChild(link);
 }
 const downloadCanvas = (canv:any) => {
   let rawDataUrl = canv.toDataURL({
-        format: 'png',
-        quality: 0.8
-    })
-    download('Block Simulation.png', rawDataUrl);
+    format: 'png',
+    quality: 0.8
+  })
+  download('Block Simulation.png', rawDataUrl);
 }
 
 const downloadJson = () => {
@@ -243,20 +261,22 @@ onDestroy(() => saveState(getBlocks(), getEvents()));
   {#if errorMessage}  {errorMessage} {/if}
 </div>
 
-{#key componentKey}
 <div id="frame" class="d-flex justify-content-start">
     {#if displayMode === 'both' || displayMode === 'stacks'}
+    {#key componentKeyA}
     <div class="mx-2">
       <Canvas on:doUpdateCanvas={handleUpdateCanvas} blockMode={'stacks'} {dimensions} {blockDimensions}/>
     </div>
+    {/key}
     {/if}
     {#if displayMode === 'both' || displayMode === 'bitcoin'}
+    {#key componentKeyB}
     <div class="mx-2">
         <Canvas on:doUpdateCanvas={handleUpdateCanvas} blockMode={'bitcoin'} {dimensions} {blockDimensions}/>
     </div>
+    {/key}
     {/if}
 </div>
-{/key}
 {#key componentKey2}
 <div class="row">
   <div class="col-6">

@@ -9,6 +9,7 @@ export function pushEvent(blockId: number, parentId:number, from:BlockState, to:
 }
 
 export function popEvent() {
+	if (eventList.length === 1) throw new Error('Reached initial event');
 	return eventList.pop();
 }
 
