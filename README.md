@@ -37,32 +37,43 @@ npm publish
 
 Button controls on each block;
 
-- H - Highlight ancestors and descendant's - click once to highlight click twice to reset - changes block colour to purple.
+- H - Highlight ancestors and descendant's - click once to highlight click twice to reset or click and hold - changes the subtree block colour to purple.
 - T/F click to toggle Freeze/Thaw block - mining is prevented when block is frozen - changes block colour to light blue / cyan.
-- C/D click to toggle Concealed/Disclosed - changes the colour of the block to white background, does not change mining rules etc atm.
+- C/D click to toggle Concealed/Disclosed - changes the block colour to white, does not change mining rules etc atm.
 
-## API - Business Model
+## API
+
+### API - Business Model
 
 See src/lib/blocks.ts
 
-- window.mineBlock(id) // mines a new node from the given parent or throws error
+- window.mineBlock(id) // mines a new block given the given parent id or throws error
 - window.freezeBlock(id) // freezes the given block or throws error
 - window.thawBlock (id) // thaws the given block or throws error
 - window.concealBlock (id) // conceals the given block or throws error
 - window.discloseBlock(id) // discloses the given block or throws error
 - window.setMinableBlocks() // resets the the mining rules to the default - overwrites existing state
-- window.setBlocks([]:BlockType) // sets the block state
+- window.setBlocks([]:BlockType) // sets the block state from a list of blocks
 - window.undoLastOperation // undo last operation
+- window.redoLastOperation // not yet implemented
 - window.clearBlocks() // clears blocks
 
-## API UI
+### API - User Interface
 
 See src/lib/components/route-home.svelte
 
 - window.redraw() // syncs the ui state with the model
 
+## Business Logic
+
+These rules are subject to change on review;
+
+1. By default mining is allowed from the two most recent blocks.
+2. Concealing / disclosing has no effect aside changing the colour of the block.
+3. Freezing / thawing a block overrides the default mining behaviour.
+
 ## Notes
 
-1. Default mining state - can only mine from two most recent blocks.
-2. Cleaner separation between business and UI logic
-3. TODO undo/redo feature.
+1. Cleaner separation between business and UI logic
+2. TODO undo/redo feature.
+3. TODO move blocks.
