@@ -1,9 +1,8 @@
 <script lang="ts">
-import { getBlocks, undoBlock, clearBlocks } from '../blocks';
-import { popEvent, getEvents, pushEvent, clearEvents } from '../events';
+import { getBlocks, undoLastOperation, clearBlocks, freezeBlock, thawBlock, concealBlock, discloseBlock } from '../blocks';
+import { getEvents, clearEvents } from '../events';
 import { saveState } from '../blockStorage';
 import Canvas from './canvas/Canvas.svelte';
-import BlockMenu from './BlockMenu.svelte';
 import { ArrowsFullscreen, CloudDownloadFill, ZoomIn, Grid3x2GapFill, ArrowRepeat, ArrowUpLeftCircleFill, FileBarGraphFill } from "svelte-bootstrap-icons";
 import { onDestroy } from 'svelte';
 import type { BlockType } from "$lib/models/Block";
@@ -12,16 +11,13 @@ import { blockStore } from '$lib/stores.js';
 
 let displayMode = 'both';
 let displays = 2;
-let componentKeyA = 0;
-let componentKeyB = 0;
+let componentKey1 = 0;
 let componentKey2 = 0;
-let componentKey3 = 0;
-let targetBlock:BlockType;
 let errorMessage: string|undefined;
 
 let dimensions = {
     width: (window.innerWidth - 60) / displays,
-    height: (window.innerHeight - 200)
+    height: (window.innerHeight + 800)
 };
 
 let blockSize:number = 80;
@@ -40,32 +36,15 @@ const handleUpdateCanvas = (e: { detail: any; }) => {
     case 'expandCanvas':
       expandCanvas();
       break;
-    case 'activateMenu':
-      targetBlock = data.block;
-      componentKey3++;
-      break;
     case 'addBlock':
       errorMessage = undefined;
-      targetBlock = data.block;
-      pushEvent(data.block.id, data.block.parentId, BlockState.READY, BlockState.READY);
-      //if (data.blockMode === 'stacks') componentKeyB++;
-      //else if (data.blockMode === 'bitcoin') componentKeyA++;
-      componentKey3++;
       componentKey2++;
-      //componentKeyA++;
-      //componentKeyB++;
       break;
-    case 'freeze':
-      registerNewState(data.block, BlockState.FROZEN);
+    case 'toggleConcealed':
+      registerNewState(data.block, 'toggleConcealed');
       break;
-    case 'thaw':
-      registerNewState(data.block, BlockState.READY);
-      break;
-    case 'conceal':
-      registerNewState(data.block, BlockState.CONCEALED);
-      break;
-    case 'disclose':
-      registerNewState(data.block, BlockState.READY);
+    case 'toggleFrozen':
+      registerNewState(data.block, 'toggleFrozen');
       break;
     case 'stateChangeError':
         errorMessage = data.e
@@ -74,14 +53,17 @@ const handleUpdateCanvas = (e: { detail: any; }) => {
   }
 }
 
-const registerNewState = (block:BlockType, newState:BlockState) => {
+const registerNewState = (block:BlockType, action:string) => {
   try {
     errorMessage = undefined;
-    const startState = block.state;
-    block.changeState(newState);
-    pushEvent(block.id, block.parentId, startState, newState);
+    if (action === 'toggleFrozen') {
+      if (block.frozen) thawBlock(block.id);
+      else freezeBlock(block.id);
+    } else if (action === 'toggleConcealed') {
+      if (block.concealed) discloseBlock(block.id);
+      else concealBlock(block.id);
+    }
     $blockStore = { opcode: 'newState', blockId: block.id };
-    componentKey3++;
     componentKey2++;
   } catch(err:any) {
     errorMessage = err;
@@ -93,26 +75,26 @@ const updateBlockSize = (value:number) => {
   //const scaleRatio = Math.min(dimensions.width/blockSize, dimensions.height/blockSize);
   blockDimensions = { width: (80 * blockSize) / 100, height: (80 * blockSize) / 100 };
   //dimensions = { width: dimensions.width * scaleRatio, height: dimensions.height * scaleRatio };
-  componentKeyA++;
-  componentKeyB++;
+  componentKey1++;
 }
 
 const expandCanvas = () => {
   dimensions.width = dimensions.width * 1.5;
   dimensions.height = dimensions.height * 3;
-  componentKeyA++;
-  componentKeyB++;
+  componentKey1++;
   componentKey2++;
-  componentKey3++;
 }
 
-const undoLastBlock = () => {
-  const event = popEvent();
-  undoBlock(event);
-  saveState(getBlocks(), getEvents());
-  $blockStore = { opcode: 'undo', blockId: event.blockId };
+const redraw = () => {
+  componentKey1++;
   componentKey2++;
-  componentKey3++;
+}
+window.redraw = redraw;
+
+const undoLastBlock = () => {
+  const blockId = undoLastOperation();
+  $blockStore = { opcode: 'undo', blockId: blockId };
+  componentKey2++;
 }
 
 const updateDisplayMode = (value:string) => {
@@ -127,10 +109,8 @@ const updateDisplayMode = (value:string) => {
   } else {
       dimensions.width = (window.innerWidth - 60) / 2;
   }
-  componentKeyA++;
-  componentKeyB++;
+  componentKey1++;
   componentKey2++;
-  componentKey3++;
 }
 
 const restart = () => {
@@ -141,10 +121,8 @@ const restart = () => {
   saveState(getBlocks(), getEvents());
   clearBlocks();
   clearEvents();
-  componentKeyA++;
-  componentKeyB++;
+  componentKey1++;
   componentKey2++;
-  componentKey3++;
 }
 
 const download = (filename:string, data:any) => {
@@ -180,7 +158,6 @@ const downloadJson = () => {
 onDestroy(() => saveState(getBlocks(), getEvents()));
 
 </script>
-{#key componentKey3}
 <nav class="navbar navbar-expand-lg navbar-light bg-light" style="width: 100%;">
   <div class="container">
     <a class="navbar-brand" href="/">
@@ -240,33 +217,32 @@ onDestroy(() => saveState(getBlocks(), getEvents()));
     </div>
   </div>
 </nav>
+<!--
 <div class="mx-2 d-flex justify-content-around">
   <BlockMenu block={targetBlock} on:doUpdateState={handleUpdateCanvas}/>
 </div>
-{/key}
-
+-->
 <div class="">
 
 <div class="mx-2 d-flex justify-content-around text-danger" style="height: 30px;">
   {#if errorMessage}  {errorMessage} {/if}
 </div>
 
+{#key componentKey1}
 <div id="frame" class="d-flex justify-content-start">
     {#if displayMode === 'both' || displayMode === 'stacks'}
-    {#key componentKeyA}
     <div class="mx-2">
       <Canvas on:doUpdateCanvas={handleUpdateCanvas} blockMode={'stacks'} {dimensions} {blockDimensions}/>
     </div>
-    {/key}
     {/if}
     {#if displayMode === 'both' || displayMode === 'bitcoin'}
-    {#key componentKeyB}
     <div class="mx-2">
         <Canvas on:doUpdateCanvas={handleUpdateCanvas} blockMode={'bitcoin'} {dimensions} {blockDimensions}/>
     </div>
-    {/key}
     {/if}
 </div>
+{/key}
+
 {#key componentKey2}
 <div class="row">
   <div class="col-6">

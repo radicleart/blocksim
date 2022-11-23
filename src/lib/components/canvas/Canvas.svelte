@@ -3,31 +3,41 @@
   import { fabric } from "fabric";
   import { Download } from "svelte-bootstrap-icons";
   import { createEventDispatcher } from "svelte";
-  import { isFamily, createBlock, getBlocks, calculateBlockCoords } from '$lib/blocks'
-  import { makeLines, addRect, addMenu } from '$lib/drawing'
-  import type { DimensionsType } from "../../blocks";
+  import { mineBlock, getBlocks } from '$lib/blocks'
+  import { isFamily, makeLines, addRect, addMenuItem, calculateBlockCoords } from '$lib/drawing'
+  import type { DimensionsType } from "../../drawing";
   import type { BlockType } from "../../models/Block";
-  import { BlockState } from "$lib/models/Block";
   import { blockStore } from '$lib/stores.js';
 
   const dispatch = createEventDispatcher();
+
+  export let blockMode:string;
+  export let blockDimensions:DimensionsType = { width: 100, height: 100 };
+  export let dimensions = {
+    width: (window.innerWidth - 60) / 2,
+    height: (window.innerHeight + 800)
+  };
+  let canvas: HTMLCanvasElement;
+  let canv: any;
 
   let localOp: { opcode:string, blockId:number };
   blockStore.subscribe((value: { opcode:string, blockId:number }) => localOp = value);
 
   $: {
     try {
-      if (localOp.opcode === 'highlightTree') {
-        //console.log('highlightTree: ' + $blockStore.blockId + ', ' + blockMode + ', $blockStore=', $blockStore);
-        const block = getBlocks().find((o) => o.id === localOp.blockId);
-        rerender(block);
-      } else if (localOp.opcode === 'newState' || localOp.opcode === 'unhighlightTree' || localOp.opcode === 'addBlock') {
-        rerender(null);
-      } else if (localOp.opcode === 'undo') {
-        canv.clear()
-        rerender(null);
-        canv.renderAll();
-      }
+      //if (!rendering()) {
+        if (localOp.opcode === 'highlightTree') {
+          //console.log('highlightTree: ' + $blockStore.blockId + ', ' + blockMode + ', $blockStore=', $blockStore);
+          const block = getBlocks().find((o) => o.id === localOp.blockId);
+          rerender(block);
+        } else if (localOp.opcode === 'newState' || localOp.opcode === 'unhighlightTree' || localOp.opcode === 'addBlock') {
+          rerender(null);
+        } else if (localOp.opcode === 'undo') {
+          canv.clear()
+          rerender(null);
+          canv.renderAll();
+        }
+      //}
     } catch(err) {
       console.log(err);
     }
@@ -40,82 +50,83 @@
       frozenFill: '#98d9ed',
       frozenStroke: '#98d9ed',
       concealedFill: '#fff',
-      concealedStroke: '#fff',
+      concealedStroke: '#000',
+      darkStroke: '#000',
+      lightStroke: '#fff',
     }
     
-    export let blockMode:string;
-    export let blockDimensions:DimensionsType = { width: 100, height: 100 };
-    export let dimensions = {
-      width: (window.innerWidth - 60) / 2,
-      height: (window.innerHeight - 200)
-    };
-    let canvas: HTMLCanvasElement;
-    let canv: any;
-
     onDestroy(() => {
       if (canv) canv.dispose();
     })
 
+    const rerender = function (block:BlockType|null) {
+      //if (rendering()) return;
+      try {
+        canv.clear();
+      } catch (err) {
+        console.log('Err: ' + err + ' ' + block);
+      }
+      const blocks = getBlocks();
+      calculateBlockCoords(getBlocks(), blockMode, dimensions, blockDimensions);
+      blocks.forEach((b) => {
+        const coords = b.coords;
+        let fill = pallette.readyFill;
+        let stroke = pallette.readyStroke;
+        //if (b.frozen && b.concealed) {
+        //  fill = pallette.frozenFill;
+        //  stroke = pallette.darkStroke;
+        //}
+        if (b.frozen) {
+          fill = pallette.frozenFill;
+          stroke = pallette.darkStroke;
+        }
+        if (b.concealed) {
+          fill = pallette.concealedFill;
+          stroke = pallette.darkStroke;
+        }
+        if (block && isFamily(getBlocks(), block, b.id)) {
+          fill = pallette.familyFill;
+          stroke = pallette.lightStroke;
+        }
+        const group = addRect(canv, b.id, coords, blockDimensions, fill, stroke);
+        
+        let menuGroup = addMenuItem(1, canv, group, b);
+        
+        menuGroup.on({'mousedblclick' : toggleHighlight});
+        menuGroup.on({'mousedown' : highlightTree});
+        menuGroup.on({'mouseup' : unhighlightTree});
+        
+        menuGroup = addMenuItem(2, canv, group, b);
+        menuGroup.on({'mouseup' : toggleFrozen});
+        
+        menuGroup = addMenuItem(3, canv, group, b);
+        menuGroup.on({'mouseup' : toggleConcealed});
+
+        //group.on({'mousemove': highlightTree});
+        group.on({'mouseup': addBlock});
+        //group.on({'mouseout': unhighlightTree});
+      });
+      renderLines(blockDimensions);
+      console.log('Objects: ' + canv._objects.length);
+    };
+
+    let highlighted = false;
     const unhighlightTree = function (evt: any) {
-      //const id = evt.target.toObject().id;
-      //console.log('unhighlightTree: ' + id + ', ' + blockMode + ', $blockStore=', $blockStore);
-      $blockStore = { opcode: 'unhighlightTree', blockId: 0 };
+      const id = evt.target.toObject().id;
+      $blockStore = { opcode: 'unhighlightTree', blockId: id };
+      highlighted = false;
     };
 
     const highlightTree = function (evt: any) {
+      //setRendering()
       const id = evt.target.toObject().id;
       $blockStore = { opcode: 'highlightTree', blockId: id };
+      highlighted = true;
     };
 
-    /**
-    const render = function (block:BlockType|null) {
-      const blocks = getBlocks();
-      canv.clear();
-      canv.backgroundColor = pallette.background;
-      calculateBlockCoords(blockMode, dimensions, blockDimensions);
-      blocks.forEach((b) => {
-        const coords = b.coords;
-        
-        let fill = pallette.readyFill;
-        let stroke = pallette.readyStroke;
-        if (b.state === BlockState.FROZEN) {
-          fill = pallette.frozenFill;
-          stroke = pallette.frozenStroke;
-        } else if (b.state === BlockState.CONCEALED) fill = pallette.concealedFill;
-        if (block && isFamily(block, b.id)) fill = pallette.familyFill;
-        const group = addRect(canv, b.id, coords, blockDimensions, fill, stroke);
-        group.on({'mouseout': unhighlightTree});
-        group.on({'mousemove': highlightTree});
-        group.on({'mouseup': addBlock});
-        const menuGroup = addMenu(canv, group, b.id);
-        menuGroup.on({'mouseup' : activateMenu});
-      });
-      renderLines(blockDimensions);
-      canv.renderAll();
-    };
-    */
-
-    const rerender = function (block:BlockType|null) {
-      const blocks = getBlocks();
-      calculateBlockCoords(blockMode, dimensions, blockDimensions);
-      blocks.forEach((b) => {
-        const coords = b.coords;
-        
-        let fill = pallette.readyFill;
-        let stroke = pallette.readyStroke;
-        if (b.state === BlockState.FROZEN) {
-          fill = pallette.frozenFill;
-          stroke = pallette.frozenStroke;
-        } else if (b.state === BlockState.CONCEALED) fill = pallette.concealedFill;
-        if (block && isFamily(block, b.id)) fill = pallette.familyFill;
-        const group = addRect(canv, b.id, coords, blockDimensions, fill, stroke);
-        group.on({'mouseout': unhighlightTree});
-        group.on({'mousemove': highlightTree});
-        group.on({'mouseup': addBlock});
-        const menuGroup = addMenu(canv, group, b.id);
-        menuGroup.on({'mouseup' : activateMenu});
-      });
-      renderLines(blockDimensions);
+    const toggleHighlight = function (evt: any) {
+      if (highlighted) unhighlightTree(evt);
+      else highlightTree(evt);
     };
 
     const renderLines = function (blockDimensions:DimensionsType) {
@@ -132,16 +143,21 @@
       })
     };
 
-    const activateMenu = function (evt: any) {
+    const toggleFrozen = function (evt: any) {
       const id = evt.target.toObject().id;
       const block = getBlocks().find((o) => o.id === id);
-      dispatch("doUpdateCanvas", { blockMode, opcode: 'activateMenu', block });
+      dispatch("doUpdateCanvas", { blockMode, opcode: 'toggleFrozen', block });
+    };
+
+    const toggleConcealed = function (evt: any) {
+      const id = evt.target.toObject().id;
+      const block = getBlocks().find((o) => o.id === id);
+      dispatch("doUpdateCanvas", { blockMode, opcode: 'toggleConcealed', block });
     };
 
     const addBlock = function (evt: any) {
       try {
-        const block = createBlock(evt.target.toObject().id);
-        //render(null);
+        const block = mineBlock(evt.target.toObject().id);
         $blockStore = { opcode: 'addBlock', blockId: block.id };
         dispatch("doUpdateCanvas", { blockMode, opcode: 'addBlock', canv, block });
       } catch (e) {
@@ -151,16 +167,13 @@
     };
 
     const handleGenesis = function () {
-      const block = createBlock(0);
+      const block = mineBlock(0);
       $blockStore = { opcode: 'addBlock', blockId: block.id };
-      //render(null);
-      // doUpdateCanvas('handleGenesis');
       dispatch("doUpdateCanvas", { blockMode, opcode: 'addBlock', canv, dimensions, block });
     };
 
     const mountCanvas = async function () {
       canv = new fabric.Canvas(canvas, {
-        //backgroundColor: 'cyan',
         preserveObjectStacking: true
       });
       canv.setDimensions({width: dimensions.width, height: dimensions.height})
@@ -174,19 +187,8 @@
 
     onMount(async () => {
       await mountCanvas();
-      /**
-      blockStore.subscribe((block) => {
-        console.log('onMount: ' + block + ', ' + blockMode + ', $blockStore=', $blockStore);
-        if ($blockStore.id) {
-          if (block && block.id) {
-            render(block);
-          } else {
-            render(null)
-          }
-        }
-      });
-      */
     });
+
 </script>
 
 <div class="d-flex justify-content-between py-1">
