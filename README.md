@@ -33,7 +33,7 @@ cd package
 npm publish
 ```
 
-## Button Controls Blocks
+## Blocks Controls
 
 Button controls on each block;
 
