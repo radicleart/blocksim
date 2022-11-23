@@ -1,12 +1,10 @@
 <script lang="ts">
-import { getBlocks, undoLastOperation, clearBlocks, freezeBlock, thawBlock, concealBlock, discloseBlock } from '../blocks';
-import { getEvents, clearEvents } from '../events';
-import { saveState } from '../blockStorage';
+import { saveCurrentState, getBlocks, redoLastOperation, undoLastOperation, clearBlocks, freezeBlock, thawBlock, concealBlock, discloseBlock } from '../blocks';
+import { getEvents } from '../events';
 import Canvas from './canvas/Canvas.svelte';
-import { ArrowsFullscreen, CloudDownloadFill, ZoomIn, Grid3x2GapFill, ArrowRepeat, ArrowUpLeftCircleFill, FileBarGraphFill } from "svelte-bootstrap-icons";
+import { ArrowUpRightCircleFill, ArrowsFullscreen, CloudDownloadFill, ZoomIn, Grid3x2GapFill, ArrowRepeat, ArrowUpLeftCircleFill, FileBarGraphFill } from "svelte-bootstrap-icons";
 import { onDestroy } from 'svelte';
 import type { BlockType } from "$lib/models/Block";
-import { BlockState } from '$lib/models/Block'
 import { blockStore } from '$lib/stores.js';
 
 let displayMode = 'both';
@@ -47,9 +45,9 @@ const handleUpdateCanvas = (e: { detail: any; }) => {
       registerNewState(data.block, 'toggleFrozen');
       break;
     case 'stateChangeError':
-        errorMessage = data.e
+      errorMessage = data.e
     default:
-      saveState(getBlocks(), getEvents());
+      //saveCurrentState();
   }
 }
 
@@ -91,10 +89,24 @@ const redraw = () => {
 }
 window.redraw = redraw;
 
+const redoLastBlock = () => {
+  try {
+    const blockId = redoLastOperation();
+    $blockStore = { opcode: 'redo', blockId: blockId };
+    componentKey2++;
+  } catch(err:any) {
+    errorMessage = err;
+  }
+}
+
 const undoLastBlock = () => {
-  const blockId = undoLastOperation();
-  $blockStore = { opcode: 'undo', blockId: blockId };
-  componentKey2++;
+  try {
+    const blockId = undoLastOperation();
+    $blockStore = { opcode: 'undo', blockId: blockId };
+    componentKey2++;
+  } catch(err:any) {
+    errorMessage = err;
+  }
 }
 
 const updateDisplayMode = (value:string) => {
@@ -118,9 +130,7 @@ const restart = () => {
     width: (window.innerWidth - 60) / displays,
     height: (window.innerHeight - 200)
   };
-  saveState(getBlocks(), getEvents());
   clearBlocks();
-  clearEvents();
   componentKey1++;
   componentKey2++;
 }
@@ -148,14 +158,9 @@ const downloadJson = () => {
   //let objJsonB64 = base64.encode(utf8.encode(JSON.stringify(getBlocks())));
   //let objJsonB64 = Buffer.from(objJsonStr).toString("base64");
   download('Block Simulation.json', objJsonStr);
-
-	// convert zip file to url object (for anchor tag download)
-	//let blob = await res.blob();
-	//var url = window.URL || window.webkitURL;
-	//let link = url.createObjectURL(blob);
 }
 
-onDestroy(() => saveState(getBlocks(), getEvents()));
+onDestroy(() => saveCurrentState());
 
 </script>
 <nav class="navbar navbar-expand-lg navbar-light bg-light" style="width: 100%;">
@@ -179,6 +184,9 @@ onDestroy(() => saveState(getBlocks(), getEvents()));
           <a title="Undo last operation" class="nav-link" href="/" on:click|preventDefault={undoLastBlock}><ArrowUpLeftCircleFill width={20} height={20}/></a>
         </li>
         <li class="nav-item">
+          <a title="Redo last operation" class="nav-link" href="/" on:click|preventDefault={redoLastBlock}><ArrowUpRightCircleFill width={20} height={20}/></a>
+        </li>
+        <li class="nav-item">
           <a title="Expand canvas" class="nav-link" href="/" on:click|preventDefault={expandCanvas}><ArrowsFullscreen width={20} height={20}/></a>
         </li>
         <li class="nav-item dropdown">
@@ -196,15 +204,11 @@ onDestroy(() => saveState(getBlocks(), getEvents()));
               <ZoomIn width={20} height={20} />
             </a>
             <div class="dropdown-menu" aria-labelledby="navbarDropdown">
-              <a class="dropdown-item" href="/" on:click|preventDefault="{() => {updateBlockSize(20) }}">20%</a>
-              <a class="dropdown-item" href="/" on:click|preventDefault="{() => {updateBlockSize(40) }}">40%</a>
               <a class="dropdown-item" href="/" on:click|preventDefault="{() => {updateBlockSize(60) }}">60%</a>
               <a class="dropdown-item" href="/" on:click|preventDefault="{() => {updateBlockSize(80) }}">80%</a>
               <a class="dropdown-item" href="/" on:click|preventDefault="{() => {updateBlockSize(100) }}">100%</a>
               <a class="dropdown-item" href="/" on:click|preventDefault="{() => {updateBlockSize(120) }}">120%</a>
               <a class="dropdown-item" href="/" on:click|preventDefault="{() => {updateBlockSize(140) }}">140%</a>
-              <a class="dropdown-item" href="/" on:click|preventDefault="{() => {updateBlockSize(160) }}">160%</a>
-              <a class="dropdown-item" href="/" on:click|preventDefault="{() => {updateBlockSize(180) }}">180%</a>
             </div>
         </li>
     </ul>

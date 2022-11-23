@@ -32,7 +32,7 @@
           rerender(block);
         } else if (localOp.opcode === 'newState' || localOp.opcode === 'unhighlightTree' || localOp.opcode === 'addBlock') {
           rerender(null);
-        } else if (localOp.opcode === 'undo') {
+        } else if (localOp.opcode === 'undo' || localOp.opcode === 'redo') {
           canv.clear()
           rerender(null);
           canv.renderAll();

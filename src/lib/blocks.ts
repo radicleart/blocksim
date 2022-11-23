@@ -1,9 +1,8 @@
 import { Block } from './models/Block.ts'
 import { BlockState } from './models/Block.ts'
 import type { BlockType } from './models/Block.ts'
-import type { EventType } from './models/Event.ts'
 import { popEvent, getEvents, pushEvent, clearEvents } from './events.ts';
-import { saveState } from './blockStorage.ts';
+import { saveState, getLastState } from './blockStorage.ts';
 
 let blockList:BlockType[]  = [];
 
@@ -18,12 +17,40 @@ export function getBlocks() {
 	return blockList;
 }
 
-export function clearBlocks() {
+export function saveCurrentState() {
+	saveState(blockList, getEvents());
+  }
+
+  export function clearBlocks() {
+	saveCurrentState();
 	blockList = [];
-}
+	clearEvents();
+  }
 
 export function setBlocks(blocks:BlockType[]) {
 	blockList = blocks;
+}
+
+export function redoLastOperation() {
+	const storedEvents = getLastState();
+	const events = getEvents();
+	if (storedEvents.length === events.length) throw new Error('Nothing to redo');
+	const event = storedEvents[events.length];
+	if (event.from === event.to) {
+		const b = new Block(event.parentId, blockList.length + 1);
+		b.level = getLevel(event.parentId);
+		blockList.push(b);
+		pushEvent(event.blockId, event.parentId, event.from, event.to);
+		//saveCurrentState();
+	} else {
+		const index = blockList.findIndex((o) => o.id === event.blockId);
+		if (event.to === BlockState.FROZEN) blockList[index].frozen = true
+		else if (event.to === BlockState.THAWED) blockList[index].frozen = false
+		else if (event.to === BlockState.CONCEALED) blockList[index].concealed = true
+		else if (event.to === BlockState.DISCLOSED) blockList[index].concealed = false
+		pushEvent(event.blockId, event.parentId, event.to, event.from);
+	}
+	return event.blockId;
 }
 
 export function undoLastOperation() {
@@ -38,7 +65,6 @@ export function undoLastOperation() {
 		else if (event.from === BlockState.CONCEALED) blockList[index].concealed = true
 		else if (event.from === BlockState.DISCLOSED) blockList[index].concealed = false
 	}
-	saveState(getBlocks(), getEvents());
 	return event.blockId;
 }
 
@@ -52,6 +78,7 @@ export function mineBlock(parentId:number) {
 		blockList.push(b);
 		setMinableBlocks();
 		pushEvent(b.id, b.parentId, BlockState.THAWED, BlockState.THAWED);
+		saveCurrentState();
 		return b;
 	}
 }
@@ -62,6 +89,7 @@ export function freezeBlock(id:number) {
 	if (block.frozen) throw new Error('State change error - block is already frozen');
 	block.frozen = true;
 	pushEvent(block.id, block.parentId, BlockState.THAWED, BlockState.FROZEN);
+	saveCurrentState();
 }
 
 export function thawBlock(id:number) {
@@ -70,6 +98,7 @@ export function thawBlock(id:number) {
 	if (!block.frozen) throw new Error('State change error - block is already thawed');
 	block.frozen = false;
 	pushEvent(block.id, block.parentId, BlockState.FROZEN, BlockState.THAWED);
+	saveCurrentState();
 }
 
 export function concealBlock(id:number) {
@@ -78,6 +107,7 @@ export function concealBlock(id:number) {
 	if (block.concealed) throw new Error('State change error - block is already concealed');
 	block.concealed = true;
 	pushEvent(block.id, block.parentId, BlockState.DISCLOSED, BlockState.CONCEALED);
+	saveCurrentState();
 }
 
 export function discloseBlock(id:number) {
@@ -86,6 +116,7 @@ export function discloseBlock(id:number) {
 	if (!block.concealed) throw new Error('State change error - block is already disclosed');
 	block.concealed = false;
 	pushEvent(block.id, block.parentId, BlockState.CONCEALED, BlockState.DISCLOSED);
+	saveCurrentState();
 }
 
 export function setMinableBlocks() {
@@ -94,6 +125,7 @@ export function setMinableBlocks() {
 		if (!b.frozen && b.id > numb - 2) b.frozen = false;
 		else b.frozen = true;
 	});
+	saveCurrentState();
 }
 
 window.mineBlock = mineBlock;
