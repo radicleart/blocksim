@@ -1,5 +1,5 @@
 <script lang="ts">
-import { saveCurrentState, getBlocks, redoLastOperation, undoLastOperation, clearBlocks, freezeBlock, thawBlock, concealBlock, discloseBlock } from '../blocks';
+import { restoreSavedState, saveCurrentState, getBlocks, redoLastOperation, undoLastOperation, clearBlocks, freezeBlock, thawBlock, concealBlock, discloseBlock } from '../blocks';
 import { getEvents } from '../events';
 import Canvas from './canvas/Canvas.svelte';
 import { ArrowUpRightCircleFill, ArrowsFullscreen, CloudDownloadFill, ZoomIn, Grid3x2GapFill, ArrowRepeat, ArrowUpLeftCircleFill, FileBarGraphFill } from "svelte-bootstrap-icons";
@@ -12,10 +12,12 @@ let displays = 2;
 let componentKey1 = 0;
 let componentKey2 = 0;
 let errorMessage: string|undefined;
+const startWidth = (window.innerWidth - 60) / displays;
+const startHeight = window.innerHeight + 800;
 
 let dimensions = {
-    width: (window.innerWidth - 60) / displays,
-    height: (window.innerHeight + 800)
+    width: startWidth,
+    height: startHeight
 };
 
 let blockSize:number = 80;
@@ -26,13 +28,14 @@ let blockDimensions = { width: 80, height: 80 };
  * @param e
  */
 const handleUpdateCanvas = (e: { detail: any; }) => {
+  errorMessage = undefined;
   const data = e.detail;
   switch(data.opcode) {
     case 'downloadCanvas':
       downloadCanvas(data.canv);
       break;
-    case 'expandCanvas':
-      expandCanvas();
+    case 'resetLayout':
+      resetLayout();
       break;
     case 'addBlock':
       errorMessage = undefined;
@@ -76,14 +79,15 @@ const updateBlockSize = (value:number) => {
   componentKey1++;
 }
 
-const expandCanvas = () => {
-  dimensions.width = dimensions.width * 1.5;
-  dimensions.height = dimensions.height * 3;
-  componentKey1++;
-  componentKey2++;
+const resetLayout = () => {
+  //dimensions.width = dimensions.width * 1.5;
+  errorMessage = undefined;
+  dimensions.height = dimensions.height * 2;
+  $blockStore = { opcode: 'resetLayout', blockId: 0 };
 }
 
 const redraw = () => {
+  errorMessage = undefined;
   componentKey1++;
   componentKey2++;
 }
@@ -91,6 +95,7 @@ window.redraw = redraw;
 
 const redoLastBlock = () => {
   try {
+    errorMessage = undefined;
     const blockId = redoLastOperation();
     $blockStore = { opcode: 'redo', blockId: blockId };
     componentKey2++;
@@ -101,6 +106,7 @@ const redoLastBlock = () => {
 
 const undoLastBlock = () => {
   try {
+    errorMessage = undefined;
     const blockId = undoLastOperation();
     $blockStore = { opcode: 'undo', blockId: blockId };
     componentKey2++;
@@ -110,6 +116,7 @@ const undoLastBlock = () => {
 }
 
 const updateDisplayMode = (value:string) => {
+  errorMessage = undefined;
   displayMode = value;
   displays = 1;
   if (displayMode !== 'both') {
@@ -125,14 +132,29 @@ const updateDisplayMode = (value:string) => {
   componentKey2++;
 }
 
-const restart = () => {
+const restoreSaveState = () => {
+  errorMessage = undefined;
   dimensions = {
-    width: (window.innerWidth - 60) / displays,
-    height: (window.innerHeight - 200)
+    width: startWidth,
+    height: startHeight
   };
-  clearBlocks();
-  componentKey1++;
-  componentKey2++;
+  restoreSavedState();
+  $blockStore = { opcode: 'loadSavedState', blockId: 0 };
+}
+
+const restart = (opcode:string) => {
+  if (opcode === 'restart') {
+    errorMessage = undefined;
+    dimensions = {
+      width: startWidth,
+      height: startHeight
+    };
+    clearBlocks();
+    componentKey1++;
+    componentKey2++;
+  } else {
+    restoreSaveState();
+  }
 }
 
 const download = (filename:string, data:any) => {
@@ -177,9 +199,6 @@ onDestroy(() => saveCurrentState());
         <li class="nav-item active">
           <a title="Download json" class="nav-link" href="/" on:click|preventDefault={downloadJson}><CloudDownloadFill width={20} height={20}/></a>
         </li>
-        <li class="nav-item active">
-          <a title="Clear and restart" class="nav-link" href="/" on:click|preventDefault={restart}><ArrowRepeat width={20} height={20}/></a>
-        </li>
         <li class="nav-item">
           <a title="Undo last operation" class="nav-link" href="/" on:click|preventDefault={undoLastBlock}><ArrowUpLeftCircleFill width={20} height={20}/></a>
         </li>
@@ -187,7 +206,16 @@ onDestroy(() => saveCurrentState());
           <a title="Redo last operation" class="nav-link" href="/" on:click|preventDefault={redoLastBlock}><ArrowUpRightCircleFill width={20} height={20}/></a>
         </li>
         <li class="nav-item">
-          <a title="Expand canvas" class="nav-link" href="/" on:click|preventDefault={expandCanvas}><ArrowsFullscreen width={20} height={20}/></a>
+          <a title="Reset layout" class="nav-link" href="/" on:click|preventDefault={resetLayout}><ArrowsFullscreen width={20} height={20}/></a>
+        </li>
+        <li class="nav-item dropdown">
+          <a title="Change layout" class="nav-link dropdown-toggle" href="/" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+            <ArrowRepeat width={20} height={20}/> Load State
+          </a>
+          <div class="dropdown-menu" aria-labelledby="navbarDropdown">
+            <a class="dropdown-item" href="/" on:click|preventDefault="{() => {restart('saved') }}">Saved State</a>
+            <a class="dropdown-item" href="/" on:click|preventDefault="{() => {restart('reset') }}">Reset</a>
+          </div>
         </li>
         <li class="nav-item dropdown">
           <a title="Change layout" class="nav-link dropdown-toggle" href="/" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">

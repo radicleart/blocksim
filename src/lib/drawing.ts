@@ -177,17 +177,22 @@ function getCoordsBitcoin(subList:BlockType[], block:BlockType, blockDimensions:
 	return coords
 }
 
-  export function calculateBlockCoords(blockList:BlockType[], blockMode:string, dimensions:DimensionsType, blockDimensions:DimensionsType) {
+  export function calculateBlockCoords(userCoords: { blockId: number; coords: { x:number, y: number }; }[], blockList:BlockType[], blockMode:string, dimensions:DimensionsType, blockDimensions:DimensionsType) {
 	const gap = blockDimensions.height / 2;
 	for (let i = 0; i < blockList.length; i++) {
 		const block = blockList[i];
-		const sublist = blockList.slice(0, i);
-		if (block.id === 1) {
-			block.coords = { x: (dimensions.width - blockDimensions.width) / 2, y: gap }
-		} else if (blockMode === 'stacks') {
-			block.coords = getCoordsStacks(blockList, sublist, block, dimensions, blockDimensions, gap);
+		const uc = userCoords.find((u) => u.blockId === block.id);
+		if (uc) {
+			block.coords = uc.coords;
 		} else {
-			block.coords = getCoordsBitcoin(sublist, block, blockDimensions, gap);
+			const sublist = blockList.slice(0, i);
+			if (block.id === 1) {
+				block.coords = { x: (dimensions.width - blockDimensions.width) / 2, y: gap }
+			} else if (blockMode === 'stacks') {
+				block.coords = getCoordsStacks(blockList, sublist, block, dimensions, blockDimensions, gap);
+			} else {
+				block.coords = getCoordsBitcoin(sublist, block, blockDimensions, gap);
+			}
 		}
 	}
 	return blockList;
@@ -200,7 +205,7 @@ function getCoordsBitcoin(subList:BlockType[], block:BlockType, blockDimensions:
 		strokeWidth: 1,
 		stroke:"#fff",
 		paintFirst: "stroke",
-		fontFamily: 'Gilroy-Light',
+		fontFamily: 'sans-serif',
 		fill: (color) ? color : '#fff',
 		fontSize: fontSize,
 	};
@@ -218,7 +223,7 @@ function getCoordsBitcoin(subList:BlockType[], block:BlockType, blockDimensions:
 	  });
 	  //canv.add(rect);
 	  const text = new fabric.Text('' + id, getTextProps(rect.getCenterPoint(), stroke, 18));
-	  const group = new fabric.Group([rect, text], { lockMovementX: false, lockMovementY: true, selectable: false });
+	  const group = new fabric.Group([rect, text], { lockMovementX: false, lockMovementY: false, selectable: true });
 	  group.hoverCursor = 'pointer';
 	  canv.add(group);
 	  group.toObject = function() {
@@ -232,32 +237,38 @@ function getCoordsBitcoin(subList:BlockType[], block:BlockType, blockDimensions:
 
   export function addMenuItem(position:number, canv:any, parent:any, block:BlockType) {
 	const coords = {
-		x: parent.getCenterPoint().x - parent.width / 2 + 14,
-		y: parent.getCenterPoint().y + parent.height / 2 - 10,
+		x: parent.aCoords.bl.x,
+		y: parent.aCoords.bl.y - 4,
 	}
 	let symbol = 'H';
-	if (position === 2) {
+	if (position === 1) {
+		coords.x = coords.x + 15;
+	} else if (position === 2) {
 		symbol = 'F';
 		if (block.frozen) symbol = 'T';
-		coords.x = parent.getCenterPoint().x;
+		coords.x = coords.x + 35.5;
 	} else if (position === 3) {
 		symbol = 'D';
 		if (!block.concealed) symbol = 'C';
-		coords.x = parent.getCenterPoint().x + parent.width / 2 - 14;
+		coords.x = coords.x + 55;
+	} else if (position === 4) {
+		symbol = 'M';
+		coords.x = coords.x + 75;
 	}
 	//const config = { radius: 3, width: 30, height: 20, fill: '#3e3e3e', stroke: '#3e3e3e', drawer: { height: 30, width: 146, fill: '#C5edee', stroke: '#C5edee' } };
 	let stroke = '#fff';
 	if (block.frozen || block.concealed) stroke = '#000';
-	const rect = new fabric.Rect({
-		left: coords.x - 10,
-		top: coords.y - 13,
-		width: 18,
-		height: 18,
+	const rect = new fabric.Circle({
+		radius: 7.5, 
+		left: coords.x - 11,
+		top: coords.y - 15,
+		width: 14,
+		height: 14,
 		fill: 'transparent',
 		strokeWidth: 1,
 		stroke,
 	  });
-	const text = new fabric.Text(symbol, getTextProps(coords, stroke, 12));
+	const text = new fabric.Text(symbol, getTextProps({ x: coords.x - 2, y: coords.y - 2}, stroke, 9));
 	const group = new fabric.Group([rect, text], { lockMovementX: false, lockMovementY: true, selectable: false });
 
 	//const c1 = getCircle({ x: coords.x, y: coords.y }, config);

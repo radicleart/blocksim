@@ -1,7 +1,7 @@
 import { Block } from './models/Block.ts'
 import { BlockState } from './models/Block.ts'
 import type { BlockType } from './models/Block.ts'
-import { popEvent, getEvents, pushEvent, clearEvents } from './events.ts';
+import { setEvents, popEvent, getEvents, pushEvent, clearEvents } from './events.ts';
 import { saveState, getLastState } from './blockStorage.ts';
 
 let blockList:BlockType[]  = [];
@@ -21,18 +21,23 @@ export function saveCurrentState() {
 	saveState(blockList, getEvents());
   }
 
-  export function clearBlocks() {
+export function clearBlocks() {
 	saveCurrentState();
 	blockList = [];
 	clearEvents();
-  }
+}
+
+export function restoreSavedState() {
+	setEvents(getLastState().events);
+	blockList = getLastState().blocks;
+}
 
 export function setBlocks(blocks:BlockType[]) {
 	blockList = blocks;
 }
 
 export function redoLastOperation() {
-	const storedEvents = getLastState();
+	const storedEvents = getLastState().events;
 	const events = getEvents();
 	if (storedEvents.length === events.length) throw new Error('Nothing to redo');
 	const event = storedEvents[events.length];

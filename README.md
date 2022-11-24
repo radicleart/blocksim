@@ -40,6 +40,7 @@ Button controls on each block;
 - H - Highlight ancestors and descendant's - click once to highlight click twice to reset or click and hold - changes the subtree block colour to purple.
 - T/F click to toggle Freeze/Thaw block - mining is prevented when block is frozen - changes block colour to light blue / cyan.
 - C/D click to toggle Concealed/Disclosed - changes the block colour to white, does not change mining rules etc atm.
+- M click to mine a block. a block will be added to the tree. Throws error if business rules don't allow mining from this block.
 
 ## API
 
@@ -64,7 +65,9 @@ See src/lib/components/route-home.svelte
 
 - window.redraw() // syncs the ui state with the model
 
-## Business Logic
+## Features
+
+### Business Rules
 
 These rules are subject to change on review;
 
@@ -72,8 +75,12 @@ These rules are subject to change on review;
 2. Concealing / disclosing has no effect aside changing the colour of the block.
 3. Freezing / thawing a block overrides the default mining behaviour.
 
-## Notes
+Clean separation between business and UI logic allows the commands to be driven by simple API commands.
 
-1. Cleaner separation between business and UI logic
-2. TODO undo/redo feature.
-3. TODO move blocks.
+### Undo / Redo
+
+the tree can be grown and shrunk up to the last saved state by .
+
+### Move Blocks
+
+Blocks move horizontally. Children nodes follow the movement of parents but not the other way around. Vertical block movement is limited to small steps.

@@ -19,6 +19,8 @@
   };
   let canvas: HTMLCanvasElement;
   let canv: any;
+  let moving = false;
+  let userCoords: { blockId: number; coords: { x:number, y: number }; }[] = [];
 
   let localOp: { opcode:string, blockId:number };
   blockStore.subscribe((value: { opcode:string, blockId:number }) => localOp = value);
@@ -30,7 +32,10 @@
           //console.log('highlightTree: ' + $blockStore.blockId + ', ' + blockMode + ', $blockStore=', $blockStore);
           const block = getBlocks().find((o) => o.id === localOp.blockId);
           rerender(block);
-        } else if (localOp.opcode === 'newState' || localOp.opcode === 'unhighlightTree' || localOp.opcode === 'addBlock') {
+        } else if (localOp.opcode === 'loadSavedState' || localOp.opcode === 'newState' || localOp.opcode === 'unhighlightTree' || localOp.opcode === 'addBlock') {
+          rerender(null);
+        } else if (localOp.opcode === 'resetLayout') {
+          userCoords = [];
           rerender(null);
         } else if (localOp.opcode === 'undo' || localOp.opcode === 'redo') {
           canv.clear()
@@ -67,11 +72,11 @@
         console.log('Err: ' + err + ' ' + block);
       }
       const blocks = getBlocks();
-      calculateBlockCoords(getBlocks(), blockMode, dimensions, blockDimensions);
+      calculateBlockCoords(userCoords, getBlocks(), blockMode, dimensions, blockDimensions);
       blocks.forEach((b) => {
         const coords = b.coords;
         let fill = pallette.readyFill;
-        let stroke = pallette.readyStroke;
+        let stroke = pallette.darkStroke;
         //if (b.frozen && b.concealed) {
         //  fill = pallette.frozenFill;
         //  stroke = pallette.darkStroke;
@@ -102,9 +107,12 @@
         menuGroup = addMenuItem(3, canv, group, b);
         menuGroup.on({'mouseup' : toggleConcealed});
 
-        //group.on({'mousemove': highlightTree});
-        group.on({'mouseup': addBlock});
-        //group.on({'mouseout': unhighlightTree});
+        menuGroup = addMenuItem(4, canv, group, b);
+        menuGroup.on({'mouseup' : addBlock});
+
+        group.on({'mousedown': mouseDown});
+        group.on({'mousemove': mouseMove});
+        group.on({'mouseup': mouseUp});
       });
       renderLines(blockDimensions);
       console.log('Objects: ' + canv._objects.length);
@@ -118,10 +126,38 @@
     };
 
     const highlightTree = function (evt: any) {
-      //setRendering()
       const id = evt.target.toObject().id;
       $blockStore = { opcode: 'highlightTree', blockId: id };
       highlighted = true;
+    };
+
+    const mouseUp = function (evt: any) {
+      moving = false;
+      rerender(null);
+    };
+
+    let startingPoint:{ x:number, y:number};
+    const mouseDown = function (evt: any) {
+      startingPoint = canv.getPointer();
+      console.log('Starting point: ' + startingPoint.x + ' ' + startingPoint.y);    // Log to console
+      moving = true;
+    };
+
+    const mouseMove = function (evt: any) {
+      if (!moving) return;
+      const canvasCoords = { x: canv.getPointer().x, y: canv.getPointer().y };
+      if (Math.abs(canvasCoords.x - startingPoint.x) < 20 && Math.abs(canvasCoords.y - startingPoint.y) < 20) {
+        console.log('Ending point: ' + canvasCoords.x + ' ' + canvasCoords.y);    // Log to console
+        return
+      }
+      canvasCoords.y = evt.target.aCoords.tl.y;
+      const uc = userCoords.find((o) => o.blockId === evt.target.toObject().id);
+      if (uc) {
+        uc.coords = canvasCoords;
+      } else {
+        userCoords.push({ blockId: evt.target.toObject().id, coords: canvasCoords });
+      }
+      rerender(null);
     };
 
     const toggleHighlight = function (evt: any) {
@@ -157,6 +193,7 @@
 
     const addBlock = function (evt: any) {
       try {
+        moving = false;
         const block = mineBlock(evt.target.toObject().id);
         $blockStore = { opcode: 'addBlock', blockId: block.id };
         dispatch("doUpdateCanvas", { blockMode, opcode: 'addBlock', canv, block });
