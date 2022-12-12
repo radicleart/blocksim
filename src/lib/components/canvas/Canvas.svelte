@@ -115,7 +115,6 @@
         group.on({'mouseup': mouseUp});
       });
       renderLines(blockDimensions);
-      console.log('Objects: ' + canv._objects.length);
     };
 
     let highlighted = false;
@@ -139,7 +138,7 @@
     let startingPoint:{ x:number, y:number};
     const mouseDown = function (evt: any) {
       startingPoint = canv.getPointer();
-      console.log('Starting point: ' + startingPoint.x + ' ' + startingPoint.y);    // Log to console
+      // console.log('Starting point: ' + startingPoint.x + ' ' + startingPoint.y);    // Log to console
       moving = true;
     };
 
@@ -147,7 +146,7 @@
       if (!moving) return;
       const canvasCoords = { x: canv.getPointer().x, y: canv.getPointer().y };
       if (Math.abs(canvasCoords.x - startingPoint.x) < 20 && Math.abs(canvasCoords.y - startingPoint.y) < 20) {
-        console.log('Ending point: ' + canvasCoords.x + ' ' + canvasCoords.y);    // Log to console
+        // console.log('Ending point: ' + canvasCoords.x + ' ' + canvasCoords.y);    // Log to console
         return
       }
       canvasCoords.y = evt.target.aCoords.tl.y;

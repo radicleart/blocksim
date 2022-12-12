@@ -22,7 +22,6 @@ export function saveCurrentState() {
   }
 
 export function clearBlocks() {
-	saveCurrentState();
 	blockList = [];
 	clearEvents();
 }
@@ -130,7 +129,7 @@ export function setMinableBlocks() {
 		if (!b.frozen && b.id > numb - 2) b.frozen = false;
 		else b.frozen = true;
 	});
-	saveCurrentState();
+	//saveCurrentState();
 }
 
 window.mineBlock = mineBlock;

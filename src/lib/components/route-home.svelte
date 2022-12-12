@@ -132,7 +132,7 @@ const updateDisplayMode = (value:string) => {
   componentKey2++;
 }
 
-const restoreSaveState = () => {
+const restore = () => {
   errorMessage = undefined;
   dimensions = {
     width: startWidth,
@@ -143,7 +143,7 @@ const restoreSaveState = () => {
 }
 
 const restart = (opcode:string) => {
-  if (opcode === 'restart') {
+  if (opcode === 'reset') {
     errorMessage = undefined;
     dimensions = {
       width: startWidth,
@@ -153,7 +153,7 @@ const restart = (opcode:string) => {
     componentKey1++;
     componentKey2++;
   } else {
-    restoreSaveState();
+    restore();
   }
 }
 
@@ -205,16 +205,18 @@ onDestroy(() => saveCurrentState());
         <li class="nav-item">
           <a title="Redo last operation" class="nav-link" href="/" on:click|preventDefault={redoLastBlock}><ArrowUpRightCircleFill width={20} height={20}/></a>
         </li>
+        <!--
         <li class="nav-item">
           <a title="Reset layout" class="nav-link" href="/" on:click|preventDefault={resetLayout}><ArrowsFullscreen width={20} height={20}/></a>
         </li>
+        -->
         <li class="nav-item dropdown">
           <a title="Change layout" class="nav-link dropdown-toggle" href="/" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-            <ArrowRepeat width={20} height={20}/> Load State
+            <ArrowRepeat width={20} height={20}/>
           </a>
           <div class="dropdown-menu" aria-labelledby="navbarDropdown">
-            <a class="dropdown-item" href="/" on:click|preventDefault="{() => {restart('saved') }}">Saved State</a>
-            <a class="dropdown-item" href="/" on:click|preventDefault="{() => {restart('reset') }}">Reset</a>
+            <!-- <a class="dropdown-item" href="/" on:click|preventDefault={() => restart('restart')}>Load Saved State</a>-->
+            <a class="dropdown-item" href="/" on:click|preventDefault={() => restart('reset')}>Reset to Genesis</a>
           </div>
         </li>
         <li class="nav-item dropdown">
