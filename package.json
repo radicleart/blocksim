@@ -39,6 +39,7 @@
 		"autoprefixer": "^10.4.13",
 		"bootstrap": "^5.2.2",
 		"fabric": "^5.2.4",
+		"gh-pages": "^4.0.0",
 		"popper": "^1.0.1",
 		"postcss": "^8.4.19",
 		"postcss-cli": "^10.0.0",
