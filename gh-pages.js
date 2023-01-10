@@ -1,7 +1,7 @@
-var ghpages = require('gh-pages');
+import ghpages from 'gh-pages';
 
 ghpages.publish(
-    'public', // path to public directory
+    'build', // path to public directory
     {
         branch: 'gh-pages',
         repo: 'https://github.com/radicleart/blocksim.git', // Update to point to your repository  
