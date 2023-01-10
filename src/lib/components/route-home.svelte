@@ -1,5 +1,6 @@
 <script lang="ts">
 import { restoreSavedState, saveCurrentState, getBlocks, redoLastOperation, undoLastOperation, clearBlocks, freezeBlock, thawBlock, concealBlock, discloseBlock } from '../blocks';
+import logo from '$lib/assets/logo.png';
 import { getEvents } from '../events';
 import Canvas from './canvas/Canvas.svelte';
 import { ArrowUpRightCircleFill, ArrowsFullscreen, CloudDownloadFill, ZoomIn, Grid3x2GapFill, ArrowRepeat, ArrowUpLeftCircleFill, FileBarGraphFill } from "svelte-bootstrap-icons";
@@ -188,7 +189,7 @@ onDestroy(() => saveCurrentState());
 <nav class="navbar navbar-expand-lg navbar-light bg-light" style="width: 100%;">
   <div class="container">
     <a class="navbar-brand" href="/">
-        <img width="50px" src="/img/logo.png" alt="stacks ecosystem dao logo" />
+        <img width="50px" src={logo} alt="stacks ecosystem dao logo" />
     </a>
     <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
       <span class="navbar-toggler-icon"></span>

@@ -13,6 +13,21 @@ npm run dev
 npm run dev -- --open
 ```
 
+## Github Pages
+
+```bash
+npm install
+npm run build
+node ./gh-pages.js
+```
+
+This pushes the contents of `build/` to the `gh-pages` branch. Github Pages
+have been configured the server the application from:
+
+```bash
+https://radicleart.github.io/blocksim
+```
+
 ## Building
 
 To create a production version of your app:
