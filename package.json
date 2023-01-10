@@ -3,6 +3,7 @@
 	"version": "0.0.1",
 	"scripts": {
 		"dev": "vite dev",
+		"deploy": "npx gh-pages -d build",
 		"build": "vite build",
 		"build-prod": "vite build --mode production",
 		"build-stag": "vite build --mode staging",
